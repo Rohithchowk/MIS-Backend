@@ -50,6 +50,7 @@ router.get('/labs', async (req, res) => {
     }
 });
 
+// Retrieve data for Classrooms
 router.get('/classrooms', async (req, res) => {
     try {
         const classroomsData = await BlockData.find({}, 'classrooms');
@@ -60,6 +61,7 @@ router.get('/classrooms', async (req, res) => {
     }
 });
 
+// Retrieve data for Seminar Halls
 router.get('/seminarhalls', async (req, res) => {
     try {
         const seminarHallsData = await BlockData.find({}, 'SeminarHalls');
@@ -70,6 +72,7 @@ router.get('/seminarhalls', async (req, res) => {
     }
 });
 
+// Retrieve data for Timetables
 router.get('/timetables', async (req, res) => {
     try {
         const timetablesData = await BlockData.find({}, 'Timetables');
@@ -80,6 +83,7 @@ router.get('/timetables', async (req, res) => {
     }
 });
 
+// Retrieve data for Mentoring
 router.get('/mentoring', async (req, res) => {
     try {
         const mentoringData = await BlockData.find({}, 'Mentoring');
@@ -90,6 +94,7 @@ router.get('/mentoring', async (req, res) => {
     }
 });
 
+// Retrieve data for Students
 router.get('/students', async (req, res) => {
     try {
         const studentsData = await BlockData.find({}, 'Student');
@@ -100,6 +105,7 @@ router.get('/students', async (req, res) => {
     }
 });
 
+// Retrieve data for Faculty
 router.get('/faculty', async (req, res) => {
     try {
         const facultyData = await BlockData.find({}, 'Faculty');
@@ -110,6 +116,7 @@ router.get('/faculty', async (req, res) => {
     }
 });
 
+// Retrieve data for Research
 router.get('/research', async (req, res) => {
     try {
         const researchData = await BlockData.find({}, 'Research');
@@ -120,6 +127,7 @@ router.get('/research', async (req, res) => {
     }
 });
 
+// Retrieve data for Committees
 router.get('/committees', async (req, res) => {
     try {
         const committeesData = await BlockData.find({}, 'Committe');
@@ -130,6 +138,7 @@ router.get('/committees', async (req, res) => {
     }
 });
 
+// Retrieve data for Events Organized
 router.get('/eventsorganized', async (req, res) => {
     try {
         const eventsOrganizedData = await BlockData.find({}, 'EventsOrganized');
@@ -140,6 +149,7 @@ router.get('/eventsorganized', async (req, res) => {
     }
 });
 
+// Retrieve data for Events Participated
 router.get('/eventsparticipated', async (req, res) => {
     try {
         const eventsParticipatedData = await BlockData.find({}, 'EventsParticipated');
@@ -150,6 +160,7 @@ router.get('/eventsparticipated', async (req, res) => {
     }
 });
 
+// Retrieve data for Clubs
 router.get('/clubs', async (req, res) => {
     try {
         const clubsData = await BlockData.find({}, 'Clubs');
@@ -162,6 +173,7 @@ router.get('/clubs', async (req, res) => {
 
 
 
+// API to get all labs data based on department Id or department name
 router.get('/labs/:departmentIdOrName', async (req, res) => {
     try {
         const { departmentIdOrName } = req.params;
@@ -178,6 +190,7 @@ router.get('/labs/:departmentIdOrName', async (req, res) => {
     }
 });
 
+// API to get all labs data based on blockname
 router.get('/labs/block/:blockName', async (req, res) => {
     try {
         const { blockName } = req.params;
@@ -189,6 +202,7 @@ router.get('/labs/block/:blockName', async (req, res) => {
     }
 });
 
+// API to fetch data based on block name and department name
 router.get('/data/:blockName/:departmentName', async (req, res) => {
     try {
         const { blockName, departmentName } = req.params;
@@ -253,5 +267,111 @@ router.get('/categories/:blockName/:departmentName', async (req, res) => {
     }
   });
   
+  router.get("/categories/:block/:department", async (req, res) => {
+    const { block, department } = req.params;
+    try {
+      const blockData = await BlockData.findOne({ 'Block': block });
+      if (!blockData) {
+        return res.status(404).json({ error: 'Block not found' });
+      }
+      const departmentData = blockData.Department.find(dep => dep.name === department);
+      if (!departmentData) {
+        return res.status(404).json({ error: 'Department not found' });
+      }
+      const categories = Object.keys(blockData.toObject()).filter(key => key !== 'Block' && key !== 'Department' && key !== '_id' && key !== '__v');
+      res.json(categories);
+    } catch (error) {
+      console.error(`Error fetching categories for department ${department} in block ${block}:`, error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
+  // Fetch Category Data API
+  router.get("/category/:block/:department/:category", async (req, res) => {
+    const { block, department, category } = req.params;
+    try {
+      const blockData = await BlockData.findOne({ 'Block': block });
+      if (!blockData) {
+        return res.status(404).json({ error: 'Block not found' });
+      }
+      const departmentData = blockData.Department.find(dep => dep.name === department);
+      if (!departmentData) {
+        return res.status(404).json({ error: 'Department not found' });
+      }
+      const categoryData = blockData[category];
+      if (!categoryData) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+      res.json(categoryData);
+    } catch (error) {
+      console.error(`Error fetching ${category} data for department ${department} in block ${block}:`, error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
+  router.put('/api/block/category/:blockName/:departmentName/:categoryName/:id', async (req, res) => {
+    const { blockName, departmentName, categoryName, id } = req.params;
+    const newData = req.body;
+  
+    try {
+      const blockData = await BlockData.findOne({ 'Block': blockName });
+      if (!blockData) {
+        return res.status(404).json({ error: 'Block not found' });
+      }
+  
+      const department = blockData.Department.find(dep => dep.name === departmentName);
+      if (!department) {
+        return res.status(404).json({ error: 'Department not found' });
+      }
+  
+      // Find the category within the department
+      let categoryData = blockData[categoryName];
+      if (!categoryData) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+  
+      // Find the document by its ID and update it
+      const index = categoryData.findIndex(item => item._id === id);
+      if (index === -1) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
+  
+      // Update the document with the new data
+      categoryData[index] = { ...categoryData[index], ...newData };
+      await blockData.save();
+  
+      // Respond with the updated document
+      res.json({ message: 'Data updated successfully', updatedData: categoryData[index] });
+    } catch (error) {
+      console.error(`Error updating data for category ${categoryName} in block ${blockName}:`, error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+  
+
+router.put('/labs/:id', async (req, res) => {
+    const { id } = req.params;
+    const newData = req.body;
+
+    try {
+        const updatedLab = await Lab.findByIdAndUpdate(id, newData, { new: true });
+        res.json(updatedLab);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+ 
+
+
+  // Delete data endpoint
+  router.delete('/api/block/category/L/IT/:category/:id', async (req, res) => {
+    const { category, id } = req.params;
+    try {
+      await Lab.findByIdAndDelete(id);
+      res.json({ message: 'Lab data deleted successfully.' });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  });
 
 module.exports = router;
